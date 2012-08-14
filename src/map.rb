@@ -354,59 +354,57 @@ class Map < Window
   end
 
   # - Draw
-  def draw
+  def draw_content
     super
-    @window.clip_to(@x, @y + CAPTION_HEIGHT, @visible_rect[0], @visible_rect[1]) {
-      @window.scale(@scale, @scale, @x, @y + CAPTION_HEIGHT) {
-        tile_width = (@visible_rect[0] / screen_tile(0)).ceil + 2
-        tile_height = (@visible_rect[1] / screen_tile(1)).ceil + 2
-        scroll_tile_x = (@scroll_x/@window.tile_width).floor
-        scroll_tile_y = (@scroll_y/@window.tile_height).floor
-        if @window.tileset.image
-          for layer in 0...@layer.size
-            next if !@window.layer.show_layer?(layer)
-            if @window.layer.event_layer?(layer)
-              next if !@layer[layer].is_a?(Hash)
-              @layer[layer].each_key {|key|
-                real_x = @x + key[0] * @window.tile_width - @scroll_x + 1
-                real_y = @y + CAPTION_HEIGHT + key[1] * @window.tile_height - @scroll_y + 1
-                @window.draw_rect(real_x, real_y, real_x+@window.tile_width-3, real_y+@window.tile_height-3, Gosu::Color.new(130, 255, 255, 255))
-              }
-            else
-              for x in scroll_tile_x...tile_width+scroll_tile_x
-                for y in scroll_tile_y...tile_height+scroll_tile_y
-                  next if !@layer[layer][x] || !@layer[layer][x][y] || x < 0 || y < 0
-                  real_x = @x + x * @window.tile_width - @scroll_x
-                  real_y = @y + CAPTION_HEIGHT + y * @window.tile_height - @scroll_y
-                  id = @layer[layer][x][y]
-                  @window.tileset.image[id].draw(real_x, real_y, 0, 1, 1) if id >= 0
-                end
-              end
-            end
-          end
-        end
+    @window.scale(@scale, @scale, @x, @y + CAPTION_HEIGHT) {
+		tile_width = (@visible_rect[0] / screen_tile(0)).ceil + 2
+		tile_height = (@visible_rect[1] / screen_tile(1)).ceil + 2
+		scroll_tile_x = (@scroll_x/@window.tile_width).floor
+		scroll_tile_y = (@scroll_y/@window.tile_height).floor
+		if @window.tileset.image
+		  for layer in 0...@layer.size
+			next if !@window.layer.show_layer?(layer)
+			if @window.layer.event_layer?(layer)
+			  next if !@layer[layer].is_a?(Hash)
+			  @layer[layer].each_key {|key|
+				real_x = @x + key[0] * @window.tile_width - @scroll_x + 1
+				real_y = @y + CAPTION_HEIGHT + key[1] * @window.tile_height - @scroll_y + 1
+				@window.draw_rect(real_x, real_y, real_x+@window.tile_width-3, real_y+@window.tile_height-3, Gosu::Color.new(130, 255, 255, 255))
+			  }
+			else
+			  for x in scroll_tile_x...tile_width+scroll_tile_x
+				for y in scroll_tile_y...tile_height+scroll_tile_y
+				  next if !@layer[layer][x] || !@layer[layer][x][y] || x < 0 || y < 0
+				  real_x = @x + x * @window.tile_width - @scroll_x
+				  real_y = @y + CAPTION_HEIGHT + y * @window.tile_height - @scroll_y
+				  id = @layer[layer][x][y]
+				  @window.tileset.image[id].draw(real_x, real_y, 0, 1, 1) if id >= 0
+				end
+			  end
+			end
+		  end
+		end
 
-        if true
-          start_x = @x - @scroll_x
-          start_y = @y+CAPTION_HEIGHT - @scroll_y
-          end_x = @map_width * @window.tile_width + start_x
-          end_y = @map_height * @window.tile_height + start_y
-          for x in scroll_tile_x...tile_width+scroll_tile_x+1
-            next if x < 0 || x > @map_width
-            @window.draw_line(@x+x*@window.tile_width-@scroll_x, start_y, @x+x*@window.tile_width-@scroll_x, end_y, GRID_COLOR)
-          end
-          for y in scroll_tile_y...tile_height+scroll_tile_y+1
-            next if y < 0 || y > @map_height
-            @window.draw_line(start_x, @y+y*@window.tile_height+CAPTION_HEIGHT-@scroll_y, end_x, @y+y*@window.tile_height+CAPTION_HEIGHT-@scroll_y, GRID_COLOR)
-          end
-        end
+		if true
+		  start_x = @x - @scroll_x
+		  start_y = @y+CAPTION_HEIGHT - @scroll_y
+		  end_x = @map_width * @window.tile_width + start_x
+		  end_y = @map_height * @window.tile_height + start_y
+		  for x in scroll_tile_x...tile_width+scroll_tile_x+1
+			next if x < 0 || x > @map_width
+			@window.draw_line(@x+x*@window.tile_width-@scroll_x, start_y, @x+x*@window.tile_width-@scroll_x, end_y, GRID_COLOR)
+		  end
+		  for y in scroll_tile_y...tile_height+scroll_tile_y+1
+			next if y < 0 || y > @map_height
+			@window.draw_line(start_x, @y+y*@window.tile_height+CAPTION_HEIGHT-@scroll_y, end_x, @y+y*@window.tile_height+CAPTION_HEIGHT-@scroll_y, GRID_COLOR)
+		  end
+		end
 
-        if @selection_drag || @selection
-          @window.draw_rect(@x + @start_sel[0]*@window.tile_width-@scroll_x, @y + @start_sel[1]*@window.tile_height - @scroll_y + CAPTION_HEIGHT,
-          @x + @end_sel[0]*@window.tile_width - @scroll_x, @y + @end_sel[1]*@window.tile_height - @scroll_y + CAPTION_HEIGHT, Gosu::Color.new(50, 0, 0, 200))
-        end
-      }
-    }
+		if @selection_drag || @selection
+		  @window.draw_rect(@x + @start_sel[0]*@window.tile_width-@scroll_x, @y + @start_sel[1]*@window.tile_height - @scroll_y + CAPTION_HEIGHT,
+		  @x + @end_sel[0]*@window.tile_width - @scroll_x, @y + @end_sel[1]*@window.tile_height - @scroll_y + CAPTION_HEIGHT, Gosu::Color.new(50, 0, 0, 200))
+		end
+	  }
   end
 
 end
