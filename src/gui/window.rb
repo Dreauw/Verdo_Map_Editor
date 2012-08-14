@@ -128,9 +128,13 @@ class Window < Widget
     @font.draw(@caption, @x+3, @y+3, 0, 1, 1, Color::FONT) if @caption_width+10+@cross_width < @width
     @font.draw("X", @x+@width-@cross_width-3, @y+3, 0, 1, 1, Color::FONT)
     @caption_widget.each{|b|b.draw if b.show}
-    @widget.each{|b|b.draw if b.show}
+    @window.clip_to(@x, @y + CAPTION_HEIGHT, @visible_rect[0], @visible_rect[1]) {draw_content}
     return until @resizable
     @window.draw_triangle(@x+@width-11, @y+@height+CAPTION_HEIGHT, @x+@width,
-      @y+@height+CAPTION_HEIGHT, @x+@width, @y+@height+CAPTION_HEIGHT-11, Color::BORDER, nil, nil, 1)
+      @y+@height+CAPTION_HEIGHT, @x+@width, @y+@height+CAPTION_HEIGHT-11, Color::BORDER)
+  end
+  
+  def draw_content
+    @widget.each{|b|b.draw if b.show}
   end
 end
