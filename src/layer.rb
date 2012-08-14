@@ -99,8 +99,7 @@ class Layer < Window
     end
   end
 
-  def draw
-    @window.clip_to(@x, @y, @visible_rect[0]+1, @visible_rect[1] + CAPTION_HEIGHT + 1) {
+  def draw_content
       super
       @window.map.layer.each_with_index{|l, i|
         @window.draw_rect(@x+19, @y-2+i*19+CAPTION_HEIGHT, @x+@width, @y-2+i*19+CAPTION_HEIGHT+20, Color::BORDER)
@@ -108,6 +107,6 @@ class Layer < Window
           @window.draw_rect(@x+20, @y-1+i*19+CAPTION_HEIGHT, @x+@width-1, @y-1+i*19+CAPTION_HEIGHT+18, i == @index ? Color::BUTTON_PRESSED : Color::BUTTON_BACKGROUND)
         end
         @font.draw(@layers_name[i], @x + 22, @y+i*19+CAPTION_HEIGHT, 0, 1, 1, Color::FONT)
-      }}
+      }
   end
 end
