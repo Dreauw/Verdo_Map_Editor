@@ -120,10 +120,9 @@ class Tileset < Window
   
   # - Draw tiles & selection
   
-  def draw
+  def draw_content
     super
     x, y = @x, @y+CAPTION_HEIGHT
-    @window.clip_to(x, y, @visible_rect[0], @visible_rect[1]) {
       @window.scale(@scale, @scale, x, y+30) {
         if @image
           for i in @image
@@ -138,6 +137,5 @@ class Tileset < Window
           @x + @end_sel[0]*@window.tile_width, @y + @end_sel[1]*@window.tile_height + CAPTION_HEIGHT, Gosu::Color.new(50, 0, 0, 200))
         end
       }
-    }
   end
 end
