@@ -23,20 +23,16 @@ class ApplicationWindow < MainWindow
     self.caption = "Verdo Editor v0.1"
     @tile_width = @tile_height = 16
     @tileset = Tileset.new(self, 5, 5, width * 0.2 - 10, height * 0.4 - 10)
-    @tileset.shortcut = "t"
     @event = Event.new(self, 5, height * 0.4, width * 0.2 - 10)
-    @event.shortcut = "e"
     layer_x = @event.y + @event.height + Window::CAPTION_HEIGHT + 5
     @layer = Layer.new(self, 5, layer_x, width * 0.2 - 10, height - layer_x - 5)
-    @layer.shortcut = "l"
     @map = Map.new(self, width * 0.2, 5, width * 0.8 - 5, height-10)
-    @map.shortcut = "m"
     @tileset.show = @event.show = @layer.show = @map.show = false
     Gosu.enable_undocumented_retrofication
-    add_widget(@map)
-    add_widget(@layer)
-    add_widget(@event)
-    add_widget(@tileset)
+    add_widget(@map, "m")
+    add_widget(@layer, "l")
+    add_widget(@event, "e")
+    add_widget(@tileset, "t")
     File.exist?("map_backup.bak") ? on_start_backup : on_start_map_properties
   end
   
