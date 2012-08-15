@@ -9,7 +9,7 @@ class MainWindow < Gosu::Window
 
   def initialize(width, height, fullscreen = false)
     super(width, height, fullscreen)
-  @shortcut = Hash.new
+	@shortcut = Hash.new
     @widgets = Array.new
     @need_redraw = true
     @undo_stack = Array.new
@@ -68,12 +68,12 @@ class MainWindow < Gosu::Window
 	widget = @shortcut[char]
 	(return widget.show = !widget.show) if widget
     return @popup.button_triggered(id) if @popup
-    @widgets.reverse.each{|w|break unless w.button_triggered(id)}
+    @widgets.reverse.each{|w|(break unless w.button_triggered(id)) if w.show}
   end
 
   def button_up(id)
     return @popup.button_released(id) if @popup
-    @widgets.reverse.each{|w|break unless w.button_released(id)}
+    @widgets.reverse.each{|w|(break unless w.button_released(id)) if w.show}
   end
 
   def update
