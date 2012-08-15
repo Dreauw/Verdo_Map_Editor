@@ -7,11 +7,13 @@ class Map < Window
   attr_reader :scroll_y
   attr_reader :start_sel
   attr_reader :end_sel
+  attr_reader :show_grid
 
   GRID_COLOR = Gosu::Color.new(100, 191, 191, 191)
 
   def initialize(window, x, y, width, height)
     super(window, x, y, width, height, "Map - 100%")
+	@show_grid = true
     @layer = [[[]]]
     @map_width, @map_height = 30, 25
     @tools = add_caption_widget(ToggleButtons.new(window, 0, 0, ["P", "F", "S"], 16))
@@ -122,7 +124,11 @@ class Map < Window
   # - Input handling methods
 
   def button_triggered(id)
-    qsDfqsf if id == Gosu::KbA
+    if @window.button_id_to_char(id) == "g"
+	  @show_grid = !@show_grid
+	  @window.need_redraw = true
+	  return false
+	end
     super_bool = !super(id)
     mouse_over = mouse_over?
     @ms_left_pressed = true if id == Gosu::MsLeft && mouse_over
@@ -356,7 +362,7 @@ class Map < Window
   # - Draw
   def draw_content
     super
-    @window.scale(@scale, @scale, @x, @y + CAPTION_HEIGHT) {
+	  @window.scale(@scale, @scale, @x, @y + CAPTION_HEIGHT) {
 		tile_width = (@visible_rect[0] / screen_tile(0)).ceil + 2
 		tile_height = (@visible_rect[1] / screen_tile(1)).ceil + 2
 		scroll_tile_x = (@scroll_x/@window.tile_width).floor
@@ -385,7 +391,7 @@ class Map < Window
 		  end
 		end
 
-		if true
+		if @show_grid
 		  start_x = @x - @scroll_x
 		  start_y = @y+CAPTION_HEIGHT - @scroll_y
 		  end_x = @map_width * @window.tile_width + start_x
