@@ -5,9 +5,11 @@ class MainWindow < Gosu::Window
   attr_accessor :need_redraw
   attr_reader :popup
   attr_accessor :undo_stack
+  attr_reader :shortcut
 
   def initialize(width, height, fullscreen = false)
     super(width, height, fullscreen)
+  @shortcut = Hash.new
     @widgets = Array.new
     @need_redraw = true
     @undo_stack = Array.new
@@ -18,8 +20,9 @@ class MainWindow < Gosu::Window
     @undo_stack.pop if @undo_stack.size > UNDO_SIZE
   end
 
-  def add_widget(widget)
+  def add_widget(widget, shortcut = nil)
     @widgets.push(widget)
+	@shortcut[shortcut] = widget if shortcut
     return widget
   end
 
@@ -58,9 +61,12 @@ class MainWindow < Gosu::Window
   
   def button_down(id)
     return if text_input && id != Gosu::MsLeft
-    if (button_down?(Gosu::KbRightControl) || button_down?(Gosu::KbLeftControl)) && button_id_to_char(id) == "z"
+	char = button_id_to_char(id)
+    if (button_down?(Gosu::KbRightControl) || button_down?(Gosu::KbLeftControl)) && char == "z"
       @undo_stack.pop.execute(self) if !@undo_stack.empty?
     end
+	widget = @shortcut[char]
+	(return widget.show = !widget.show) if widget
     return @popup.button_triggered(id) if @popup
     @widgets.reverse.each{|w|break unless w.button_triggered(id)}
   end
