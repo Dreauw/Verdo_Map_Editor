@@ -2,7 +2,6 @@ class Window < Widget
   CAPTION_HEIGHT = 21
 
   attr_reader :caption, :resizable, :visible_rect
-  attr_accessor :shortcut
   
   def initialize(window, x, y, width, height, caption = "", resizable = true)
     height -= CAPTION_HEIGHT
@@ -66,7 +65,6 @@ class Window < Widget
   def button_triggered(id)
     @caption_widget.each{|b|b.button_triggered(id)}
     @widget.each{|b|b.button_triggered(id)}
-    self.show = !@show if @window.button_id_to_char(id) == @shortcut
     if id == Gosu::MsLeft
       if @window.mouse_x.between?(@x, @x+@width) &&
           @window.mouse_y.between?(@y, @y+CAPTION_HEIGHT-3)
@@ -135,6 +133,6 @@ class Window < Widget
   end
   
   def draw_content
-    @widget.each{|b|b.draw if b.show}
+  @widget.each{|b|b.draw if b.show}
   end
 end
