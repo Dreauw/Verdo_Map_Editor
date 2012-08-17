@@ -190,13 +190,19 @@ class Map < Window
       if @tools.index == 0
         x, y = get_mouse_tile_x, get_mouse_tile_y
         if !@window.layer.event_layer?(@window.layer.index)
-          for xx in (@window.tileset.start_sel[0])...@window.tileset.end_sel[0]
-            for yy in @window.tileset.start_sel[1]...@window.tileset.end_sel[1]
-              id = @window.tileset.get_tile_id(xx, yy)
-              @undo_event = SetTilesEvent.new(@window, @window.layer.index, @map_width) if !@undo_event
-              set_tile(x + xx - @window.tileset.start_sel[0], y + yy - @window.tileset.start_sel[1], id, @window.layer.index, @undo_event)
-            end
-          end
+			if @window.tileset.sel_mode == :autotile
+				return if @last_xy == [x, y]
+				set_autotile(x, y)
+				@last_xy = [x, y]
+			else
+				for xx in (@window.tileset.start_sel[0])...@window.tileset.end_sel[0]
+					for yy in @window.tileset.start_sel[1]...@window.tileset.end_sel[1]
+						id = @window.tileset.get_tile_id(xx, yy)
+						@undo_event = SetTilesEvent.new(@window, @window.layer.index, @map_width) if !@undo_event
+						set_tile(x + xx - @window.tileset.start_sel[0], y + yy - @window.tileset.start_sel[1], id, @window.layer.index, @undo_event)
+					end
+				end
+			end
         else
           @undo_event = SetEventEvent.new(@window, @window.layer.index, @map_width) if !@undo_event
           set_event(x, y, @window.event.event_name, @window.layer.index, @undo_event)
@@ -204,7 +210,11 @@ class Map < Window
       elsif @tools.index == 1
         x, y = get_mouse_tile_x, get_mouse_tile_y
         id = @window.tileset.get_tile_id(@window.tileset.start_sel[0], @window.tileset.start_sel[1])
-        flood_fill(x, y, id, true)
+		id = :autotile if  @window.tileset.sel_mode == :autotile
+		return if @last_xy == [x, y]
+		flood_fill(x, y, id, true)
+		@last_xy = [x, y]
+        
       elsif @selection_drag && @tools.index == 2
         self.end_sel = [get_mouse_tile_x, get_mouse_tile_y]
       end
@@ -285,6 +295,7 @@ class Map < Window
   # - Flood fill algorithm
 
   def flood_fill(x, y, id, event = true)
+	  p "a"
     return if !x.between?(0, @map_width-1) || !y.between?(0, @map_height-1)
     tile_to_fill = get_tile(x, y)
     return if tile_to_fill == id
@@ -296,7 +307,7 @@ class Map < Window
       x, y = n%@map_width, n/@map_width
       if get_tile(x, y) == tile_to_fill
         get_tile(x, y)
-        set_tile(x, y, id)
+        id == :autotile ? set_autotile(x, y) : set_tile(x, y, id)
         event.add_tile(x, y) if event
         q.push(n + 1) if x+1 < @map_width
         q.push(n - 1) if x-1 >= 0
@@ -357,6 +368,30 @@ class Map < Window
     @end_sel[0] += 1 if (@end_sel[0] - @start_sel[0]) >= 0
     @end_sel[1] += 1 if (@end_sel[1] - @start_sel[1]) >= 0
     @window.need_redraw = true
+  end
+  
+  # - Autotile methods
+  def set_autotile(x, y, layer = @window.layer.index, update_neighbour = true)
+	autotile = @window.tileset.get_selection
+	return autotile[0][0] if autotile.size <= 2
+	tiles_id = autotile.join(" ")
+	left = tiles_id.include?(get_tile(x - 1, y).to_s)
+	right = tiles_id.include?(get_tile(x + 1, y).to_s)
+	up = tiles_id.include?(get_tile(x, y - 1).to_s)
+	down = tiles_id.include?(get_tile(x, y + 1).to_s)
+	xx = 1 
+	xx = 0 if !left && right
+	xx = autotile.size - 1 if !right && left
+	xx = 1 if up && down
+	yy = 0
+	yy = autotile[xx].size - 1 if up
+	set_tile(x, y, autotile[xx][yy], layer)
+	if update_neighbour
+		set_autotile(x + 1, y, layer, false) if right
+		set_autotile(x - 1, y, layer, false) if left
+		set_autotile(x, y + 1, layer, false) if down
+		set_autotile(x, y - 1, layer, false) if up
+	end
   end
 
   # - Draw
