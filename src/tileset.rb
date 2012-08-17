@@ -4,11 +4,16 @@ class Tileset < Window
   attr_reader :start_sel
   attr_reader :end_sel
   attr_accessor :file
+  attr_reader :sel_mode
+  
+  SELECTION_COLOR = Gosu::Color.new(50, 0, 0, 200)
+  AUTOTILE_SELECTION_COLOR = Gosu::Color.new(50, 0, 200, 0)
   
   def initialize(window, x, y, width, height)
     super(window, x, y, width, height, "Tileset - 100%")
     @file = ""
     @scale = 1.0
+    @sel_mode = :normal
     @start_sel, @end_sel = [0, 0], [1, 1]
     @tile_width = (@width / (@window.tile_width*@scale)).round
     button = Button.new(window, 0, 0, "R", 16)
@@ -66,7 +71,8 @@ class Tileset < Window
       return if (@scale * 100).floor <= 20
       self.scale = (@scale - 0.2).round(2)
       self.caption = "Tileset - #{(@scale*100).floor}%"
-    elsif @ms_left_pressed
+    elsif @ms_left_pressed || @ms_right_pressed
+      @sel_mode = (@ms_left_pressed ? :normal : :autotile)
       self.start_sel = [get_mouse_tile_x, get_mouse_tile_y]
       @selection = true
     end
@@ -84,7 +90,7 @@ class Tileset < Window
   
   def update
     super
-    if @ms_left_pressed && @selection && !@drag_resize
+    if (@ms_left_pressed || @ms_right_pressed) && @selection && !@drag_resize
       self.end_sel = [get_mouse_tile_x, get_mouse_tile_y]
       return
     end
@@ -115,7 +121,22 @@ class Tileset < Window
     return if !value
     @end_sel[0] += 1 if (@end_sel[0] - @start_sel[0]) >= 0
     @end_sel[1] += 1 if (@end_sel[1] - @start_sel[1]) >= 0
+    @new_selection = true
     @window.need_redraw = true
+  end
+  
+  def get_selection
+    if @new_selection
+      @new_selection = false
+      @sel = []
+      for xx in (@window.tileset.start_sel[0])...@window.tileset.end_sel[0]
+        @sel[xx - @window.tileset.start_sel[0]] = []
+        for yy in @window.tileset.start_sel[1]...@window.tileset.end_sel[1]
+          @sel[xx - @window.tileset.start_sel[0]][yy - @window.tileset.start_sel[1]] = get_tile_id(xx, yy)
+        end
+      end
+    end
+    return @sel
   end
   
   # - Draw tiles & selection
@@ -134,7 +155,7 @@ class Tileset < Window
 
         if @selection
           @window.draw_rect(@x + @start_sel[0]*@window.tile_width, @y + @start_sel[1]*@window.tile_height + CAPTION_HEIGHT,
-          @x + @end_sel[0]*@window.tile_width, @y + @end_sel[1]*@window.tile_height + CAPTION_HEIGHT, Gosu::Color.new(50, 0, 0, 200))
+          @x + @end_sel[0]*@window.tile_width, @y + @end_sel[1]*@window.tile_height + CAPTION_HEIGHT, @sel_mode == :autotile ? AUTOTILE_SELECTION_COLOR : SELECTION_COLOR)
         end
       }
   end
