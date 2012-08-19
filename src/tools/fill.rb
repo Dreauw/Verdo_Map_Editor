@@ -1,5 +1,6 @@
 class Fill < Tool
   def ms_left_triggered
+    return if @window.layer.event_layer?(@window.layer.index)
     x, y = @window.map.get_mouse_tile_x, @window.map.get_mouse_tile_y
     id = @window.tileset.get_tile_id(@window.tileset.start_sel[0], @window.tileset.start_sel[1])
     return if @last_xy == [x, y]
