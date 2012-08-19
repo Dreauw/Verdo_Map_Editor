@@ -250,11 +250,7 @@ class Map < Window
   def set_autotile(x, y, layer = @window.layer.index, update_neighbour = true, event = nil)
     autotile = @window.tileset.get_selection
     return autotile[0][0] if autotile.size <= 2
-    tiles_id = autotile.join(" ")
-    left = tiles_id.include?(get_tile(x - 1, y).to_s)
-    right = tiles_id.include?(get_tile(x + 1, y).to_s)
-    up = tiles_id.include?(get_tile(x, y - 1).to_s)
-    down = tiles_id.include?(get_tile(x, y + 1).to_s)
+    left, right, up, down = get_autotile_neighbour(x, y, layer)
     xx = 1 
     xx = 0 if !left && right
     xx = autotile.size - 1 if !right && left
@@ -265,11 +261,24 @@ class Map < Window
     tmp_event = (event.has_tile?(x, y) ? nil : event)
     set_tile(x, y, autotile[xx][yy], layer, tmp_event)
     if update_neighbour
-      set_autotile(x + 1, y, layer, false, event) if right
-      set_autotile(x - 1, y, layer, false, event) if left
-      set_autotile(x, y + 1, layer, false, event) if down
-      set_autotile(x, y - 1, layer, false, event) if up
+      update_autotile_neighbour(x, y, layer, event, left, right, up, down)
     end
+  end
+  
+  def get_autotile_neighbour(x, y, layer = @window.layer.index)
+    tiles_id = @window.tileset.get_selection.join(" ")
+    left = tiles_id.include?(get_tile(x - 1, y).to_s)
+    right = tiles_id.include?(get_tile(x + 1, y).to_s)
+    up = tiles_id.include?(get_tile(x, y - 1).to_s)
+    down = tiles_id.include?(get_tile(x, y + 1).to_s)
+    return left, right, up, down
+  end
+  
+  def update_autotile_neighbour(x, y, layer = @window.layer.index, event = nil, left = true, right = true, up = true, down = true)
+    set_autotile(x + 1, y, layer, false, event) if right
+    set_autotile(x - 1, y, layer, false, event) if left
+    set_autotile(x, y + 1, layer, false, event) if down
+    set_autotile(x, y - 1, layer, false, event) if up
   end
 
   # - Draw

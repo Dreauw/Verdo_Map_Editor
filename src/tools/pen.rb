@@ -26,13 +26,14 @@ class Pen < Tool
   def ms_right_pressed
     x, y = @window.map.get_mouse_tile_x, @window.map.get_mouse_tile_y
     if !@window.layer.event_layer?(@window.layer.index)
+      @undo_event = SetTilesEvent.new(@window, @window.layer.index, @window.map.map_width) if !@undo_event
       # Autotile
       if @window.tileset.sel_mode == :autotile
-        # TODO
+        @window.map.set_tile(x, y, -1, @window.layer.index, @undo_event)
+        @window.map.update_autotile_neighbour(x, y, @window.layer.index, @undo_event, *@window.map.get_autotile_neighbour(x, y))
         return
       end
       # Tile
-      @undo_event = SetTilesEvent.new(@window, @window.layer.index, @window.map.map_width) if !@undo_event
       @window.map.set_tile(x, y, -1, @window.layer.index, @undo_event)
     else
       # Event
