@@ -16,8 +16,8 @@ class MainWindow < Gosu::Window
   end
 
   def add_undo_event(event)
+    @undo_stack.pop if @undo_stack.size >= UNDO_SIZE
     @undo_stack.push(event)
-    @undo_stack.pop if @undo_stack.size > UNDO_SIZE
   end
 
   def add_widget(widget, shortcut = nil)
