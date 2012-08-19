@@ -247,7 +247,7 @@ class Map < Window
   end
   
   # - Autotile methods
-  def set_autotile(x, y, layer = @window.layer.index, update_neighbour = true)
+  def set_autotile(x, y, layer = @window.layer.index, update_neighbour = true, event = nil)
     autotile = @window.tileset.get_selection
     return autotile[0][0] if autotile.size <= 2
     tiles_id = autotile.join(" ")
@@ -261,12 +261,13 @@ class Map < Window
     xx = 1 if up && down
     yy = 0
     yy = autotile[xx].size - 1 if up
-    set_tile(x, y, autotile[xx][yy], layer)
+    tmp_event = (event.has_tile?(x, y) ? nil : event)
+    set_tile(x, y, autotile[xx][yy], layer, tmp_event)
     if update_neighbour
-      set_autotile(x + 1, y, layer, false) if right
-      set_autotile(x - 1, y, layer, false) if left
-      set_autotile(x, y + 1, layer, false) if down
-      set_autotile(x, y - 1, layer, false) if up
+      set_autotile(x + 1, y, layer, false, event) if right
+      set_autotile(x - 1, y, layer, false, event) if left
+      set_autotile(x, y + 1, layer, false, event) if down
+      set_autotile(x, y - 1, layer, false, event) if up
     end
   end
 

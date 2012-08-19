@@ -13,6 +13,10 @@ class SetTilesEvent < UndoEvent
   def add_tile(x, y, id)
     @tiles[x+y*@width] = id
   end
+  
+  def has_tile?(x, y)
+    return @tiles[x+y*@width] != nil
+  end
 
   def execute(window)
     @tiles.each { |key, value|

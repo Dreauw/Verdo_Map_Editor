@@ -2,7 +2,8 @@ class Pen < Tool
   def ms_left_pressed
     x, y = @window.map.get_mouse_tile_x, @window.map.get_mouse_tile_y
     if @window.tileset.sel_mode == :autotile
-      @window.map.set_autotile(x, y)
+      @undo_event = SetTilesEvent.new(@window, @window.layer.index, @window.map.map_width) if !@undo_event
+      @window.map.set_autotile(x, y, @window.layer.index, true, @undo_event)
       return
     end
     if !@window.layer.event_layer?(@window.layer.index) && @window.tileset.sel_mode != :autotile
