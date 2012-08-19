@@ -13,10 +13,11 @@ class Map < Window
 
   def initialize(window, x, y, width, height)
     super(window, x, y, width, height, "Map - 100%")
-	@show_grid = true
+	  @show_grid = true
     @layer = [[[]]]
     @map_width, @map_height = 30, 25
     @tools = add_caption_widget(ToggleButtons.new(window, 0, 0, ["P", "F", "S"], 16))
+    @tool = [Pen.new(@window), Fill.new(@window), Selection.new(@window)]
     add_caption_widget(Button.new(@window, 0, 0, "M", 16)).set_action(
       :release, Proc.new {MapProperties.new(@window)})
     add_caption_widget(Button.new(@window, 0, 0, "L", 16)).set_action(
@@ -125,37 +126,31 @@ class Map < Window
 
   def button_triggered(id)
     if @window.button_id_to_char(id) == "g"
-	  @show_grid = !@show_grid
-	  @window.need_redraw = true
-	  return false
-	end
+      @show_grid = !@show_grid
+      return !(@window.need_redraw = true)
+    end
     super_bool = !super(id)
     mouse_over = mouse_over?
     @ms_left_pressed = true if id == Gosu::MsLeft && mouse_over
     @ms_right_pressed = true if id == Gosu::MsRight && mouse_over
-    if id == Gosu::KbDelete && @selection
-      set_selection(nil)
-    elsif id == Gosu::MsWheelUp && mouse_over
-      return if (@scale * 100).floor>= 980
-      self.scale = (@scale + 0.2).round(2)
-      self.caption = "Map - #{(@scale*100).floor}%"
-    elsif id == Gosu::MsWheelDown && mouse_over
-      return if (@scale * 100).floor <= 20
-      self.scale = (@scale - 0.2).round(2)
-      self.caption = "Map - #{(@scale*100).floor}%"
-    elsif @ms_left_pressed
-      if @window.button_down?(Gosu::KbSpace)
-        @scroll_drag = true
-        @scroll_drag_start = [@window.mouse_x, @window.mouse_y]
-        @initial_scroll = [@scroll_x, @scroll_y]
-      elsif @tools.index == 2
-        self.start_sel = [get_mouse_tile_x, get_mouse_tile_y]
-        @selection_drag = true
+    if @ms_left_pressed && @window.button_down?(Gosu::KbSpace)
+      @scroll_drag = true
+      @scroll_drag_start = [@window.mouse_x, @window.mouse_y]
+      @initial_scroll = [@scroll_x, @scroll_y]
+    elsif mouse_over
+      if id == Gosu::MsWheelUp && !((@scale * 100).floor >= 980)
+        self.scale = (@scale + 0.2).round(2)
+        self.caption = "Map - #{(@scale*100).floor}%"
+      elsif id == Gosu::MsWheelDown && !((@scale * 100).floor <= 20)
+        self.scale = (@scale - 0.2).round(2)
+        self.caption = "Map - #{(@scale*100).floor}%"
+      elsif @ms_left_pressed
+        @tool[@tools.index].ms_left_triggered
+      elsif @ms_right_pressed
+        @tool[@tools.index].ms_right_triggered
+      else
+        @tool[@tools.index].button_triggered(id)
       end
-    end
-    if @tools.index != 2 && @selection
-      @selection = false
-      @window.need_redraw = true
     end
     return (@ms_left_pressed || @ms_right_pressed || super_bool ? false : true)
   end
@@ -164,18 +159,9 @@ class Map < Window
     @ms_left_pressed = false if id == Gosu::MsLeft
     @ms_right_pressed = false if id == Gosu::MsRight
     @scroll_drag = false if @scroll_drag && !@ms_left_pressed
-    @undo_event = nil if !@ms_left_pressed || !@ms_right_pressed
-    
-    if @selection_drag && !@ms_left_pressed
-      if @start_sel == [get_mouse_tile_x, get_mouse_tile_y]
-        @selection_drag = false
-        @selection = false
-      else
-        @selection_drag = false
-        @selection = true
-      end
-      @window.need_redraw = true
-    end
+    @tool[@tools.index].ms_left_released if id == Gosu::MsLeft
+    @tool[@tools.index].ms_right_released if id == Gosu::MsRight
+    (@window.need_redraw = !@tool[2].selection = false) if @tools.index != 2 && @tool[2].selection
     return super(id)
   end
 
@@ -186,53 +172,9 @@ class Map < Window
     if @scroll_drag
       self.scroll_x = (@window.mouse_x - @scroll_drag_start[0] - @initial_scroll[0]*@scale)
       self.scroll_y = (@window.mouse_y - @scroll_drag_start[1] - @initial_scroll[1]*@scale)
-    elsif @ms_left_pressed && !@drag_resize
-      if @tools.index == 0
-        x, y = get_mouse_tile_x, get_mouse_tile_y
-        if !@window.layer.event_layer?(@window.layer.index)
-			if @window.tileset.sel_mode == :autotile
-				return if @last_xy == [x, y]
-				set_autotile(x, y)
-				@last_xy = [x, y]
-			else
-				for xx in (@window.tileset.start_sel[0])...@window.tileset.end_sel[0]
-					for yy in @window.tileset.start_sel[1]...@window.tileset.end_sel[1]
-						id = @window.tileset.get_tile_id(xx, yy)
-						@undo_event = SetTilesEvent.new(@window, @window.layer.index, @map_width) if !@undo_event
-						set_tile(x + xx - @window.tileset.start_sel[0], y + yy - @window.tileset.start_sel[1], id, @window.layer.index, @undo_event)
-					end
-				end
-			end
-        else
-          @undo_event = SetEventEvent.new(@window, @window.layer.index, @map_width) if !@undo_event
-          set_event(x, y, @window.event.event_name, @window.layer.index, @undo_event)
-        end
-      elsif @tools.index == 1
-        x, y = get_mouse_tile_x, get_mouse_tile_y
-        id = @window.tileset.get_tile_id(@window.tileset.start_sel[0], @window.tileset.start_sel[1])
-		id = :autotile if  @window.tileset.sel_mode == :autotile
-		return if @last_xy == [x, y]
-		flood_fill(x, y, id, true)
-		@last_xy = [x, y]
-        
-      elsif @selection_drag && @tools.index == 2
-        self.end_sel = [get_mouse_tile_x, get_mouse_tile_y]
-      end
-    elsif @ms_right_pressed && !@drag_resize
-      if @tools.index == 0
-        x, y = get_mouse_tile_x, get_mouse_tile_y
-        if !@window.layer.event_layer?(@window.layer.index)
-          @undo_event = SetTilesEvent.new(@window, @window.layer.index, @map_width) if !@undo_event
-          set_tile(x, y, -1, @window.layer.index, @undo_event)
-        else
-          @undo_event = SetEventEvent.new(@window, @window.layer.index, @map_width) if !@undo_event
-          set_event(x, y, nil, @window.layer.index, @undo_event)
-        end
-      elsif @tools.index == 1
-        x, y = get_mouse_tile_x, get_mouse_tile_y
-        flood_fill(x, y, -1, true)
-      end
     end
+    @tool[@tools.index].ms_left_pressed if @ms_left_pressed && !@drag_resize
+    @tool[@tools.index].ms_right_pressed if @ms_right_pressed && !@drag_resize
   end
 
   # Layer manipulation
@@ -291,32 +233,6 @@ class Map < Window
   def screen_tile(widthheight)
     return widthheight == 0 ? @window.tile_width * @scale : @window.tile_height * @scale
   end
-
-  # - Flood fill algorithm
-
-  def flood_fill(x, y, id, event = true)
-	  p "a"
-    return if !x.between?(0, @map_width-1) || !y.between?(0, @map_height-1)
-    tile_to_fill = get_tile(x, y)
-    return if tile_to_fill == id
-    event = FillTilesEvent.new(@window, @window.layer.index, @map_width, tile_to_fill) if event
-    q = Array.new
-    q.push(y * @map_width + x)
-    while !q.empty?
-      n = q.shift
-      x, y = n%@map_width, n/@map_width
-      if get_tile(x, y) == tile_to_fill
-        get_tile(x, y)
-        id == :autotile ? set_autotile(x, y) : set_tile(x, y, id)
-        event.add_tile(x, y) if event
-        q.push(n + 1) if x+1 < @map_width
-        q.push(n - 1) if x-1 >= 0
-        q.push(n + @map_width) if y+1 < @map_height
-        q.push(n - @map_width) if y-1 >= 0
-      end
-    end
-    @window.need_redraw = true
-  end
   
   def scroll_x=(value)
     return if @scroll_x == value
@@ -329,69 +245,29 @@ class Map < Window
     @scroll_y = -value/@scale
     @window.need_redraw = true
   end
-
-
-  # - Mouse selection methods
-
-  def set_selection(id)
-    xx = [@start_sel[0], @end_sel[0]]
-    yy = [@start_sel[1], @end_sel[1]]
-    event = @window.layer.event_layer?(@window.layer.index)
-    @undo_event = SetEventEvent.new(@window, @window.layer.index, @map_width) if event
-    @undo_event = SetTilesEvent.new(@window, @window.layer.index, @map_width) if !event
-    id = -1 if !event && !id
-    for x in xx.min.to_i...xx.max.to_i
-      for y in yy.min.to_i...yy.max.to_i
-         if event
-           set_event(x, y, id, @window.layer.index, @undo_event)
-         else
-           set_tile(x, y, id, @window.layer.index, @undo_event)
-         end
-      end
-    end
-    @window.need_redraw = true
-  end
-
-  def start_sel=(value)
-    @start_sel = value
-    @start_sel2 = @start_sel.dup
-    @end_sel = value
-  end
-
-  def end_sel=(value)
-    2.times{|i|
-      @start_sel[i] += 1 if @start_sel2[i] == @start_sel[i] && value[i] < @start_sel[i]
-      @start_sel[i] = @start_sel2[i] if @start_sel2[i] != @start_sel[i] && value[i] >= @start_sel[i]
-    }
-    @end_sel = value
-    return if !value
-    @end_sel[0] += 1 if (@end_sel[0] - @start_sel[0]) >= 0
-    @end_sel[1] += 1 if (@end_sel[1] - @start_sel[1]) >= 0
-    @window.need_redraw = true
-  end
   
   # - Autotile methods
   def set_autotile(x, y, layer = @window.layer.index, update_neighbour = true)
-	autotile = @window.tileset.get_selection
-	return autotile[0][0] if autotile.size <= 2
-	tiles_id = autotile.join(" ")
-	left = tiles_id.include?(get_tile(x - 1, y).to_s)
-	right = tiles_id.include?(get_tile(x + 1, y).to_s)
-	up = tiles_id.include?(get_tile(x, y - 1).to_s)
-	down = tiles_id.include?(get_tile(x, y + 1).to_s)
-	xx = 1 
-	xx = 0 if !left && right
-	xx = autotile.size - 1 if !right && left
-	xx = 1 if up && down
-	yy = 0
-	yy = autotile[xx].size - 1 if up
-	set_tile(x, y, autotile[xx][yy], layer)
-	if update_neighbour
-		set_autotile(x + 1, y, layer, false) if right
-		set_autotile(x - 1, y, layer, false) if left
-		set_autotile(x, y + 1, layer, false) if down
-		set_autotile(x, y - 1, layer, false) if up
-	end
+    autotile = @window.tileset.get_selection
+    return autotile[0][0] if autotile.size <= 2
+    tiles_id = autotile.join(" ")
+    left = tiles_id.include?(get_tile(x - 1, y).to_s)
+    right = tiles_id.include?(get_tile(x + 1, y).to_s)
+    up = tiles_id.include?(get_tile(x, y - 1).to_s)
+    down = tiles_id.include?(get_tile(x, y + 1).to_s)
+    xx = 1 
+    xx = 0 if !left && right
+    xx = autotile.size - 1 if !right && left
+    xx = 1 if up && down
+    yy = 0
+    yy = autotile[xx].size - 1 if up
+    set_tile(x, y, autotile[xx][yy], layer)
+    if update_neighbour
+      set_autotile(x + 1, y, layer, false) if right
+      set_autotile(x - 1, y, layer, false) if left
+      set_autotile(x, y + 1, layer, false) if down
+      set_autotile(x, y - 1, layer, false) if up
+    end
   end
 
   # - Draw
@@ -441,9 +317,9 @@ class Map < Window
 		  end
 		end
 
-		if @selection_drag || @selection
-		  @window.draw_rect(@x + @start_sel[0]*@window.tile_width-@scroll_x, @y + @start_sel[1]*@window.tile_height - @scroll_y + CAPTION_HEIGHT,
-		  @x + @end_sel[0]*@window.tile_width - @scroll_x, @y + @end_sel[1]*@window.tile_height - @scroll_y + CAPTION_HEIGHT, Gosu::Color.new(50, 0, 0, 200))
+		if @tool[2].selection_drag || @tool[2].selection
+		  @window.draw_rect(@x + @tool[2].start_sel[0]*@window.tile_width-@scroll_x, @y + @tool[2].start_sel[1]*@window.tile_height - @scroll_y + CAPTION_HEIGHT,
+		  @x + @tool[2].end_sel[0]*@window.tile_width - @scroll_x, @y + @tool[2].end_sel[1]*@window.tile_height - @scroll_y + CAPTION_HEIGHT, Gosu::Color.new(50, 0, 0, 200))
 		end
 	  }
   end
