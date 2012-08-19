@@ -214,7 +214,7 @@ class Map < Window
     previous_id = @layer[layer][x][y]
     return if previous_id == id
     @layer[layer][x][y] = id
-    event.add_tile(x, y, previous_id) if event
+    event.add_tile(x, y, previous_id) if event && !event.has_tile?(x, y)
     @window.need_redraw = true
   end
   
