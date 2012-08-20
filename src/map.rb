@@ -53,6 +53,8 @@ class Map < Window
   
   def save(file)
     File.open(file, "w+") {|file|
+      file << "tile_width=#{@window.tile_width}\n"
+      file << "tile_height=#{@window.tile_height}\n"
       file << "width=#{@map_width}\n"
       file << "height=#{@map_height}"
       @layer.each_with_index{|a, i|
@@ -65,12 +67,13 @@ class Map < Window
           file << "\ntile_layer_#{i}="
           for y in 0...@map_height
             for x in 0...@map_width
-              file << get_tile(x, y, i).to_s
+              id = get_tile(x, y, i)
+              id = id == -1 ? " " : id.to_s
+              file << id
               file << ", " if x < @map_width-1
             end
             file << "|"
           end
-          #file << a.to_s.gsub("]]", "").gsub(", [", "").gsub("[", "").gsub("]", "|")
         end
       }
     }
@@ -81,19 +84,22 @@ class Map < Window
     @window.layer.remove_all
     File.readlines(file).each{|line|
       split = line.split("=")
-      if split[0].include?("tile")
+      if split[0].include?("tile_layer")
         @window.layer.add_layer(0)
         split[1].split("|").each_with_index {|tl, y|
           tl.split(", ").each_with_index {|tc, x|
-            set_tile(x, y, tc.to_i, @layer.size-1)
+            set_tile(x, y, (tc.empty? || tc == " ") ? -1 : tc.to_i, @layer.size-1)
           }
-          #@layer.last.push(tl.split(", ").map!{ |s| s.to_i })
         }
+      elsif split[0] == "tile_width"
+        @window.tile_width = split[1].to_i
+      elsif split[0] == "tile_height"
+        @window.tile_height = split[1].to_i
       elsif split[0] == "width"
         @map_width = split[1].to_i
       elsif split[0] == "height"
         @map_height = split[1].to_i
-      elsif split[0].include?("event")
+      elsif split[0].include?("event_layer")
         @window.layer.add_layer(1)
         split[1].split(",").each {|i|
           v = i.split("|")
