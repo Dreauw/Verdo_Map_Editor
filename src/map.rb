@@ -178,6 +178,7 @@ class Map < Window
     if @scroll_drag
       self.scroll_x = (@window.mouse_x - @scroll_drag_start[0] - @initial_scroll[0]*@scale)
       self.scroll_y = (@window.mouse_y - @scroll_drag_start[1] - @initial_scroll[1]*@scale)
+      return
     end
     @tool[@tools.index].ms_left_pressed if @ms_left_pressed && !@drag_resize
     @tool[@tools.index].ms_right_pressed if @ms_right_pressed && !@drag_resize
