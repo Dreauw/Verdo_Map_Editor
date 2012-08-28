@@ -266,6 +266,7 @@ class Map < Window
     yy = autotile[xx].size - 1 if up
     yy = 2 if up && down if autotile[xx].size > 2
     tmp_event = (event.has_tile?(x, y) ? nil : event)
+    return if autotile[xx][yy] == get_tile(x, y, layer)
     set_tile(x, y, autotile[xx][yy], layer, tmp_event)
     if update_neighbour
       update_autotile_neighbour(x, y, layer, event, left, right, up, down)

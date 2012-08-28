@@ -24,9 +24,8 @@ class Fill < Tool
     while !q.empty?
       n = q.shift
       x, y = n%@window.map.map_width, n/@window.map.map_width
-      if @window.map.get_tile(x, y) == tile_to_fill
-        @window.map.get_tile(x, y)
-        @window.map.set_tile(x, y, id)
+      if @window.map.get_tile(x, y, @window.layer.index) == tile_to_fill
+        @window.map.set_tile(x, y, id, @window.layer.index)
         event.add_tile(x, y) if event
         q.push(n + 1) if x+1 < @window.map.map_width
         q.push(n - 1) if x-1 >= 0
@@ -45,10 +44,11 @@ class Fill < Tool
     q.push(y * @window.map.map_width + x)
     while !q.empty?
       n = q.shift
-      x, y = n%@window.map.map_width, n/@window.map.map_width
-      if @window.map.get_tile(x, y) == tile_to_fill
-        @window.map.get_tile(x, y)
-        @window.map.set_autotile(x, y, @window.layer.index, true, event)
+      xx, yy = n%@window.map.map_width, n/@window.map.map_width
+      if @window.map.get_tile(xx, yy, @window.layer.index) == tile_to_fill
+        @window.map.set_autotile(xx, yy, @window.layer.index, true, event)
+        break  if [x, y] == [xx, yy] && @window.map.get_tile(xx, yy, @window.layer.index) == tile_to_fill
+        first = false if first
         q.push(n + 1) if x+1 < @window.map.map_width
         q.push(n - 1) if x-1 >= 0
         q.push(n + @window.map.map_width) if y+1 < @window.map.map_height
