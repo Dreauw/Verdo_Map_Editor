@@ -1,7 +1,11 @@
 class Fill < Tool
   def ms_left_triggered
-    return if @window.layer.event_layer?(@window.layer.index)
     x, y = @window.map.get_mouse_tile_x, @window.map.get_mouse_tile_y
+    if @window.layer.event_layer?(@window.layer.index)
+      undo_event = SetEventEvent.new(@window, @window.layer.index, @window.map.map_width)
+      @window.map.set_event(x, y, @window.event.event_name, @window.layer.index, undo_event)
+      return
+    end
     id = @window.tileset.get_tile_id(@window.tileset.start_sel[0], @window.tileset.start_sel[1])
     return if @last_xy == [x, y]
     @window.tileset.sel_mode == :autotile ? flood_fill_autotile(x, y, true) : flood_fill(x, y, id, true)
