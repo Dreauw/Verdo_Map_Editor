@@ -23,6 +23,7 @@ class ApplicationWindow < MainWindow
   attr_accessor :tile_width
   attr_accessor :tile_height
   def initialize
+    Gosu.enable_undocumented_retrofication
     super((Gosu.screen_width * 0.9).round, (Gosu.screen_height * 0.8).round, false)
     self.caption = "Verdo Editor v0.1"
     @tile_width = @tile_height = 16
@@ -32,7 +33,7 @@ class ApplicationWindow < MainWindow
     @layer = Layer.new(self, 5, layer_x, width * 0.2 - 10, height - layer_x - 5)
     @map = Map.new(self, width * 0.2, 5, width * 0.8 - 5, height-10)
     @tileset.show = @event.show = @layer.show = @map.show = false
-    Gosu.enable_undocumented_retrofication
+    
     add_widget(@map, "m")
     add_widget(@layer, "l")
     add_widget(@event, "e")

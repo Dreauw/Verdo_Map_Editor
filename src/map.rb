@@ -262,6 +262,7 @@ class Map < Window
     xx = 0 if !left && right
     xx = autotile.size - 1 if !right && left
     xx = 1 if up && down && right && left
+    xx = 1 if up && down && autotile[0].size == 2
     yy = 0
     yy = autotile[xx].size - 1 if up
     yy = 2 if up && down if autotile[xx].size > 2
