@@ -311,7 +311,7 @@ class Map < Window
 			else
 			  for x in scroll_tile_x...tile_width+scroll_tile_x
 				for y in scroll_tile_y...tile_height+scroll_tile_y
-				  next if !@layer[layer][x] || !@layer[layer][x][y] || x < 0 || y < 0
+				  next if !@layer[layer][x] || !@layer[layer][x][y] || x < 0 || y < 0 || x >= @map_width || y >= @map_height
 				  real_x = @x + x * @window.tile_width - @scroll_x
 				  real_y = @y + CAPTION_HEIGHT + y * @window.tile_height - @scroll_y
 				  id = @layer[layer][x][y]
